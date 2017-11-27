@@ -4,8 +4,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import Imputer
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_predict, cross_val_score, GridSearchCV, StratifiedKFold
-from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.model_selection import cross_val_predict, cross_val_score, GridSearchCV
+from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score, accuracy_score, confusion_matrix
 
 pd.set_option('display.max_rows', 300)
 
@@ -88,19 +88,20 @@ param_grid = {
 	'selector__relatives_dum': [False, True],
 }
 grid_search = GridSearchCV(pipe, param_grid,
-	scoring={'precision': make_scorer(precision_score), 'recall': make_scorer(recall_score), 'f1': make_scorer(f1_score)}, refit='f1')
+	scoring={'precision': make_scorer(precision_score), 'recall': make_scorer(recall_score), 'f1': make_scorer(f1_score), 'accuracy': make_scorer(accuracy_score)}, refit='accuracy')
 grid_search.fit(train, train['Survived'])
 print('Best parameters: {0}'.format(grid_search.best_params_))
-print('Best F1 score: {0}'.format(grid_search.best_score_))
+print('Best accuracy score: {0}'.format(grid_search.best_score_))
 cvres = grid_search.cv_results_
-print('{0:100} {1:>10} {2:>10} {3:>10}'.format('Parameters', 'Precision', 'Recall', 'F1'))
-for precision, recall, f1, params in zip(cvres['mean_test_precision'], cvres['mean_test_recall'], cvres['mean_test_f1'], cvres['params']):
-	print('{0:100} {1:>10.5f} {2:>10.5f} {3:>10.5f}'.format(str(params), precision, recall, f1))
+print('{0:100} {1:>10} {2:>10} {3:>10} {4:>10}'.format('Parameters', 'Precision', 'Recall', 'F1', 'Accuracy'))
+for precision, recall, f1, accuracy, params in zip(cvres['mean_test_precision'], cvres['mean_test_recall'], cvres['mean_test_f1'], cvres['mean_test_accuracy'], cvres['params']):
+	print('{0:100} {1:>10.5f} {2:>10.5f} {3:>10.5f} {4:>10.5f}'.format(str(params), precision, recall, f1, accuracy))
 pred = cross_val_predict(grid_search.best_estimator_, train, train['Survived'])
 print(confusion_matrix(train['Survived'], pred))
 print('Precision: ', precision_score(train['Survived'], pred))
 print('Recall: ', recall_score(train['Survived'], pred))
 print('F1: ', f1_score(train['Survived'], pred))
+print('Accuracy: ', accuracy_score(train['Survived'], pred))
 
 # CHECK MODEL ON TEST DATA
 test = preprocess(pd.read_csv('test.csv'))
