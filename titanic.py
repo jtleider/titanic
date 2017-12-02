@@ -52,7 +52,7 @@ print(train['Age'].value_counts().sort_index().cumsum()/714)
 print(train[['Age', 'Survived']].groupby('Age').agg(['mean', 'count']))
 survivedbycat('Age_cat')
 
-# FIT LOGISTIC REGRESSION MODEL
+# FIT MODELS
 class DataFrameSelector(BaseEstimator, TransformerMixin):
 	def __init__(self, age_cat=False, fare_cat=False, relatives_dum=False):
 		self.age_cat = age_cat
@@ -89,7 +89,10 @@ param_grid = {
 	'selector__age_cat': [False, True],
 	'selector__fare_cat': [False, True],
 	'selector__relatives_dum': [False, True],
-	'clf': [LogisticRegression(), DecisionTreeClassifier(), RandomForestClassifier(), SVC()],
+	'clf': [LogisticRegression(C=.0001), LogisticRegression(C=1), LogisticRegression(C=10000),
+		DecisionTreeClassifier(),
+		RandomForestClassifier(),
+		SVC(),],
 }
 np.random.seed(0)
 grid_search = GridSearchCV(pipe, param_grid,
