@@ -90,9 +90,9 @@ param_grid = {
 	'selector__fare_cat': [False, True],
 	'selector__relatives_dum': [False, True],
 	'clf': [LogisticRegression(C=.0001), LogisticRegression(C=1), LogisticRegression(C=10000),
-		DecisionTreeClassifier(),
-		RandomForestClassifier(),
-		SVC(),],
+		DecisionTreeClassifier(max_depth=3), DecisionTreeClassifier(max_depth=5), DecisionTreeClassifier(max_depth=7),
+		RandomForestClassifier(max_depth=3), RandomForestClassifier(max_depth=5), RandomForestClassifier(max_depth=7),
+		SVC(C=.0001), SVC(C=1), SVC(C=10000),],
 }
 np.random.seed(0)
 grid_search = GridSearchCV(pipe, param_grid,
