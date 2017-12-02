@@ -8,6 +8,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_predict, cross_val_score, GridSearchCV
+from sklearn.feature_selection import chi2, SelectKBest
 from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score, accuracy_score, confusion_matrix
 
 pd.set_option('display.max_rows', 300)
@@ -54,42 +55,30 @@ survivedbycat('Age_cat')
 
 # FIT MODELS
 class DataFrameSelector(BaseEstimator, TransformerMixin):
-	def __init__(self, age_cat=False, fare_cat=False, relatives_dum=False):
-		self.age_cat = age_cat
-		self.fare_cat = fare_cat
-		self.relatives_dum = relatives_dum
+	def __init__(self):
+		pass
 
 	def fit(self, X, y=None):
 		return self
 
 	def transform(self, X):
 		columns = ['Pclass_1', 'Pclass_2', 'Pclass_3', 'Sex_female', 'Sex_male',
-			'Cabin_class_D/E/B', 'Cabin_class_F/C', 'Cabin_class_G/A', 'Cabin_class_NS', 'Embarked_S', 'Embarked_C', 'Embarked_Q',]
-		if self.age_cat:
-			columns += ['Age_cat_(0, 5]', 'Age_cat_(5, 15]', 'Age_cat_(15, 59]', 'Age_cat_(59, 80]',]
-		else:
-			columns += ['Age', 'Age**2',]
-		if self.fare_cat:
-			columns += ['Fare_cat_(-0.001, 8.5]', 'Fare_cat_(8.5, 26.0]', 'Fare_cat_(26.0, 80.0]', 'Fare_cat_(80.0, 513.0]']
-		else:
-			columns += ['Fare', 'Fare**2',]
-		if self.relatives_dum:
-			columns += ['Relatives',]
-		else:
-			columns += ['SibSp', 'Parch',]
+			'Cabin_class_D/E/B', 'Cabin_class_F/C', 'Cabin_class_G/A', 'Cabin_class_NS', 'Embarked_S', 'Embarked_C', 'Embarked_Q',
+			'Age_cat_(0, 5]', 'Age_cat_(5, 15]', 'Age_cat_(15, 59]', 'Age_cat_(59, 80]',
+			'Fare_cat_(-0.001, 8.5]', 'Fare_cat_(8.5, 26.0]', 'Fare_cat_(26.0, 80.0]', 'Fare_cat_(80.0, 513.0]',
+			'Relatives',]
 		return X[columns].values
 
 pipe = Pipeline([
 	('selector', DataFrameSelector()),
 	('imputer', Imputer(strategy = 'median')),
+	('kbest', SelectKBest(chi2)),
 	('clf', LogisticRegression()),
 ])
 
 param_grid = {
-	'selector__age_cat': [False, True],
-	'selector__fare_cat': [False, True],
-	'selector__relatives_dum': [False, True],
-	'clf': [LogisticRegression(C=.0001), LogisticRegression(C=1), LogisticRegression(C=10000),
+	'kbest__k': [3, 5, 7, 10, 15, 'all'],
+	'clf': [LogisticRegression(C=.1), LogisticRegression(C=1), LogisticRegression(C=10), LogisticRegression(C=100), LogisticRegression(C=1000),
 		DecisionTreeClassifier(max_depth=3), DecisionTreeClassifier(max_depth=5), DecisionTreeClassifier(max_depth=7),
 		RandomForestClassifier(max_depth=3), RandomForestClassifier(max_depth=5), RandomForestClassifier(max_depth=7),
 		SVC(C=.0001), SVC(C=1), SVC(C=10000),],
@@ -103,7 +92,7 @@ print('Best accuracy score: {0}'.format(grid_search.best_score_))
 cvres = grid_search.cv_results_
 print('{0:100} {1:>20} {2:>20}'.format('Parameters', 'Train Accuracy', 'Test Accuracy',))
 for train_accuracy, test_accuracy, params in zip(cvres['mean_train_accuracy'], cvres['mean_test_accuracy'], cvres['params']):
-	print('{0:100} {1:>20.5f} {2:>20.5f}'.format(str(params)[:22]+'...'+str(params)[-75:], train_accuracy, test_accuracy))
+	print('{0:100} {1:>20.5f} {2:>20.5f}'.format((str(params)[:22]+'...'+str(params)[-75:]).replace('\n', ''), train_accuracy, test_accuracy))
 pred = cross_val_predict(grid_search.best_estimator_, train, train['Survived'])
 print(confusion_matrix(train['Survived'], pred))
 print('Precision: ', precision_score(train['Survived'], pred))
